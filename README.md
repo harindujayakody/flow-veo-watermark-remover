@@ -7,6 +7,7 @@
   <img src="https://img.shields.io/badge/FFmpeg-required-black?style=for-the-badge&logo=ffmpeg">
   <img src="https://img.shields.io/badge/UI-Rich%20CLI-purple?style=for-the-badge">
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20Mac-green?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Entry%20Point-app.py-orange?style=for-the-badge">
 </p>
 
 ---
@@ -15,59 +16,72 @@
 
 This tool helps you **bulk process videos** by:
 
-* Zooming in (center focus)
-* Cropping cleanly
-* Resizing to **720x1280 (9:16)**
-* Keeping everything consistent for mobile formats
+- Zooming in (center focus)
+- Cropping cleanly
+- Resizing to **720x1280 (9:16)**
+- Keeping everything consistent for mobile formats
 
-All wrapped in a **clean, modern terminal UI** that feels like a real app — not a script.
+All wrapped in a **modern terminal UI** that feels like a real application.
 
 ---
 
 ## 🚀 Features
 
-* ⚡ **Bulk video processing** (recursive folder scan)
-* 🎯 **Smart zoom + crop pipeline**
-* 📱 Optimized for **vertical content (Reels / Shorts / TikTok)**
-* 🎨 Beautiful **live terminal dashboard**
-* 🧠 Metadata-aware processing (resolution, duration, size)
-* 📊 Real-time progress tracking
-* 📁 Auto output folder (`/output`)
-* 🧾 Clean final summary (stats + performance)
+- ⚡ Bulk video processing (recursive scan)
+- 🎯 Smart zoom + crop pipeline
+- 📱 Optimized for vertical (Reels / Shorts / TikTok)
+- 🎨 Beautiful live terminal dashboard
+- 📊 Real-time progress tracking
+- 📂 Metadata-aware processing
+- 📁 Automatic `/output` folder
+- 🧾 Clean final summary
 
 ---
 
 ## 🖥️ Live UI Experience
 
-You get a real-time dashboard with:
-
-* 🎯 Current task (single clean card)
-* 📊 Progress bar
-* 📂 File details (size, resolution, duration)
-* ⚙️ Processing status
-* 📈 Final performance summary
+- 🎯 Single **current task card**
+- 📊 Live progress bar
+- 📂 File details (size, duration, resolution)
+- ⚙️ Processing status
+- 📈 Final performance summary
 
 ---
 
 ## 📦 Requirements
 
-* Python **3.9+**
-* `ffmpeg` + `ffprobe` installed
-* Python package:
+- Python **3.9+**
+- `ffmpeg` + `ffprobe` installed
+- Python dependency:
 
 ```bash
-pip install rich
+pip install -r requirements.txt
+````
+
+---
+
+## ⚠️ System Requirement
+
+Make sure ffmpeg is installed:
+
+```bash
+ffmpeg -version
 ```
+
+If not installed:
+
+* Windows → download from [https://ffmpeg.org](https://ffmpeg.org)
+* Mac → `brew install ffmpeg`
+* Linux → `sudo apt install ffmpeg`
 
 ---
 
 ## ⚙️ Installation
 
-Just download the script or clone your repo:
-
 ```bash
 git clone https://github.com/your-username/flow-video-zoom-crop.git
 cd flow-video-zoom-crop
+pip install -r requirements.txt
 ```
 
 ---
@@ -77,13 +91,13 @@ cd flow-video-zoom-crop
 Run inside your video folder:
 
 ```bash
-python zoom_crop_ui.py
+python app.py
 ```
 
 ### With custom zoom:
 
 ```bash
-python zoom_crop_ui.py 1.12
+python app.py 1.12
 ```
 
 ---
@@ -108,8 +122,8 @@ python zoom_crop_ui.py 1.12
 ./output/
 ```
 
-* Keeps folder structure
-* Auto-renames:
+* Folder structure preserved
+* Auto-renamed files:
 
 ```
 video_zoom_1_12.mp4
@@ -119,7 +133,7 @@ video_zoom_1_12.mp4
 
 ## 🧠 How it works
 
-1. Scans all videos recursively
+1. Scans all video files recursively
 2. Reads metadata using `ffprobe`
 3. Applies:
 
@@ -134,13 +148,15 @@ video_zoom_1_12.mp4
 
 ## 🎨 Best Terminal Setup
 
-For the best experience, use:
+For the best experience:
 
-* **JetBrains Mono**
-* **Cascadia Code**
-* **Fira Code**
+**Fonts**
 
-Recommended terminals:
+* JetBrains Mono
+* Cascadia Code
+* Fira Code
+
+**Terminals**
 
 * Windows Terminal
 * iTerm2
@@ -149,25 +165,9 @@ Recommended terminals:
 
 ---
 
-## ⚠️ Notes
-
-Check ffmpeg:
-
-```bash
-ffmpeg -version
-```
-
-Supported formats:
-
-```
-.mp4 .mov .mkv .avi .webm
-```
-
----
-
 ## 🛠️ Customization
 
-Edit inside script:
+Edit inside `app.py`:
 
 ```python
 DEFAULT_ZOOM = 1.12
@@ -179,17 +179,17 @@ OUT_H = 1280
 
 ## 💡 Use Cases
 
-* Content creators (Reels / Shorts / TikTok)
-* Mobile-first video workflows
-* Batch video cleanup
+* Social media content (Reels / Shorts / TikTok)
+* Mobile video formatting
+* Batch video processing
 * Framing adjustments
-* Social media optimization
+* Creator workflows
 
 ---
 
 ## 🧾 License
 
-MIT — use it, modify it, build on it.
+MIT License — free to use and modify.
 
 ---
 
