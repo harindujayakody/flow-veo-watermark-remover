@@ -1,3 +1,6 @@
+![VEO3 Watermark Remover](https://github.com/user-attachments/assets/5a99626e-6682-46b9-8e5d-3247b3a72908)
+
+
 # 🎬 Flow Video Zoom Crop
 
 > A fast, modern CLI tool to **zoom, crop, and batch-process videos** into perfect vertical format — with a beautiful live terminal dashboard.
