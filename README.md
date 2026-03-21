@@ -80,7 +80,7 @@ If not installed:
 
 ```bash
 git clone https://github.com/harindujayakody/flow-veo-watermark-remover
-cd flow-video-zoom-crop
+cd flow-veo-watermark-remover
 pip install -r requirements.txt
 ```
 
