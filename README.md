@@ -79,7 +79,7 @@ If not installed:
 ## ⚙️ Installation
 
 ```bash
-git clone https://github.com/your-username/flow-video-zoom-crop.git
+git clone https://github.com/harindujayakody/flow-veo-watermark-remover
 cd flow-video-zoom-crop
 pip install -r requirements.txt
 ```
