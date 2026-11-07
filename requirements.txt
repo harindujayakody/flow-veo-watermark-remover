@@ -1,1 +1,8 @@
-rich==13.7.0
+# Python Dependencies
+rich>=13.7.0,<15.0.0
+
+# System Requirement (external binary, not installable via pip):
+# FFmpeg & FFprobe must be installed on your system PATH.
+# - Windows: winget install Gyan.FFmpeg
+# - macOS:   brew install ffmpeg
+# - Linux:   sudo apt update && sudo apt install -y ffmpeg
