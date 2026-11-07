@@ -97,10 +97,21 @@ Run inside your video folder:
 python app.py
 ```
 
+The tool first lists every video it found, marks files already at 720x1280
+as skipped, and asks for confirmation before re-encoding anything.
+
 ### With custom zoom:
 
 ```bash
 python app.py 1.12
+```
+
+### Options:
+
+```bash
+python app.py --dry-run   # list what would be processed, change nothing
+python app.py --yes       # skip the confirmation prompt
+python app.py --force     # also re-encode files already at 720x1280
 ```
 
 ---
@@ -192,7 +203,12 @@ OUT_H = 1280
 
 ## 🧾 License
 
-MIT License — free to use and modify.
+MIT License — free to use and modify. See [LICENSE](LICENSE).
+
+> ⚠️ Note: removing watermarks from videos is against Google's terms of use
+> for Flow/Veo. This tool is a general zoom-crop utility — only use it on
+> videos you own or have the right to modify, and respect the terms of the
+> service that produced them.
 
 ---
 

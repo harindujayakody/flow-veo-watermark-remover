@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import shutil
@@ -158,9 +159,11 @@ def process_video(video_path: Path, out_path: Path, zoom: float) -> tuple[bool, 
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # -n (never overwrite): an existing output fails loudly instead of
+        # being silently replaced. The caller confirms the run up front.
         cmd = [
             "ffmpeg",
-            "-y",
+            "-n",
             "-i",
             str(video_path),
             "-vf",
@@ -333,23 +336,33 @@ def build_screen(
     )
 
 
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Zoom-crop every video under the current folder to 720x1280.",
+        epilog="By default the tool lists what it found and asks for confirmation "
+               "before re-encoding anything. Files already at 720x1280 are skipped.",
+    )
+    parser.add_argument("zoom", nargs="?", type=float, default=DEFAULT_ZOOM,
+                        help=f"zoom factor, >= 1.0 (default {DEFAULT_ZOOM})")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="list the videos that would be processed and exit without changing anything")
+    parser.add_argument("--yes", "-y", action="store_true",
+                        help="skip the confirmation prompt and process everything found")
+    parser.add_argument("--force", action="store_true",
+                        help="also re-encode files that are already 720x1280 (normally skipped)")
+    args = parser.parse_args(argv)
+    if args.zoom < 1.0:
+        parser.error("zoom factor must be >= 1.0")
+    return args
+
+
 def main() -> int:
+    args = parse_args()
+    zoom = args.zoom
     clear_terminal()
 
     if not has_cmd("ffmpeg") or not has_cmd("ffprobe"):
         console.print("[bold red]Error:[/bold red] ffmpeg and ffprobe must be installed and in PATH.")
-        return 1
-
-    zoom = DEFAULT_ZOOM
-    if len(sys.argv) >= 2:
-        try:
-            zoom = float(sys.argv[1])
-        except ValueError:
-            console.print("[bold red]Usage:[/bold red] python zoom_crop_ui.py [zoom_factor]")
-            return 1
-
-    if zoom < 1.0:
-        console.print("[bold red]Error:[/bold red] zoom factor must be >= 1.0")
         return 1
 
     input_dir = Path.cwd()
@@ -361,6 +374,49 @@ def main() -> int:
     if total == 0:
         console.print("[yellow]No videos found.[/yellow]")
         return 0
+
+    # Plan first, encode second: show exactly what will happen and, unless
+    # --yes was given, ask before any file is re-encoded. Already-720x1280
+    # files are skipped (they need no zoom-crop) unless --force is passed.
+    plan_rows = []
+    to_process: list[Path] = []
+    for video in videos:
+        try:
+            w, h, _ = get_video_info(video)
+        except Exception:
+            w = h = None
+        already_target = (w == OUT_W and h == OUT_H)
+        action = "skip (already 720x1280)" if already_target and not args.force else "process"
+        if action == "process":
+            to_process.append(video)
+        plan_rows.append((str(video.relative_to(input_dir)), f"{w}x{h}" if w else "unreadable", action))
+
+    plan = Table(title="Planned work — nothing has been changed yet", box=None, show_header=True)
+    plan.add_column("File")
+    plan.add_column("Size")
+    plan.add_column("Action")
+    for rel, size, action in plan_rows:
+        plan.add_row(rel, size, action)
+    console.print(plan)
+    console.print(f"[dim]{len(to_process)} of {total} video(s) will be processed; output goes to {output_dir}[/dim]")
+
+    if args.dry_run:
+        console.print("[yellow]Dry run — exiting without processing anything.[/yellow]")
+        return 0
+
+    if not to_process:
+        console.print("[yellow]Nothing to process (all files already 720x1280 — use --force to re-encode them).[/yellow]")
+        return 0
+
+    if not args.yes:
+        from rich.prompt import Confirm
+        if not Confirm.ask(f"Process {len(to_process)} video(s) with zoom {zoom:.2f}x?", default=False):
+            console.print("[yellow]Cancelled — no files were changed.[/yellow]")
+            return 0
+
+    # From here on, only the confirmed list is processed.
+    videos = to_process
+    total = len(videos)
 
     processed = 0
     failed = 0
