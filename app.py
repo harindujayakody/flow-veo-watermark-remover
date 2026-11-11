@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+"""
+Flow Video Zoom Crop
+Author: Harindu Jayakody
+Website: https://infiax.com
+
+Batch video crop and zoom utility for vertical mobile formats.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -22,6 +30,7 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
 )
+from rich.prompt import Confirm
 from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
@@ -115,7 +124,7 @@ def iter_videos(root: Path, output_root: Path) -> Iterator[Path]:
         if p.suffix.lower() not in VIDEO_EXTS:
             continue
         try:
-            if out_resolved in p.resolve().parents:
+            if out_resolved in p.resolve().parents or p.resolve() == out_resolved:
                 continue
         except Exception:
             pass
@@ -201,7 +210,7 @@ def make_hero(input_dir: Path, output_dir: Path, total: int, zoom: float) -> Pan
 
     return Panel(
         Group(title, subtitle, Text(""), info),
-        border_style="bright_blue",
+        border_style="cyan",
         padding=(1, 2),
     )
 
@@ -211,52 +220,46 @@ def make_current_task_card(
     total: int,
     rel_path: str,
     status: str,
+    recommendation: str = "",
     width: Optional[int] = None,
     height: Optional[int] = None,
     duration: Optional[float] = None,
-    recommendation: str = "-",
     input_size: Optional[int] = None,
     output_size: Optional[int] = None,
 ) -> Panel:
-    grid = Table.grid(padding=(0, 2))
-    grid.add_column(style="cyan", justify="right")
-    grid.add_column(style="white")
+    title = f"[bold cyan]Current Video[/bold cyan] [bright_black]({current_index}/{total})[/bright_black]"
 
-    grid.add_row("Task", f"{current_index}/{total}")
-    grid.add_row("File", rel_path)
-    grid.add_row("Status", status)
+    table = Table.grid(padding=(0, 2))
+    table.add_column(style="cyan", justify="right", width=14)
+    table.add_column(style="white")
 
-    if width is not None and height is not None:
-        grid.add_row("Source", f"{width} x {height}")
+    table.add_row("File", rel_path)
+    table.add_row("Status", status)
+
+    if width and height:
+        table.add_row("Resolution", f"{width}x{height} -> {OUT_W}x{OUT_H}")
     if duration is not None:
-        grid.add_row("Duration", format_seconds(duration))
+        table.add_row("Duration", format_seconds(duration))
     if input_size is not None:
-        grid.add_row("Input Size", format_bytes(input_size))
+        table.add_row("Input Size", format_bytes(input_size))
     if output_size is not None:
-        grid.add_row("Output Size", format_bytes(output_size))
+        table.add_row("Output Size", format_bytes(output_size))
+    if recommendation:
+        table.add_row("Plan", recommendation)
 
-    grid.add_row("Recommended", recommendation)
-
-    return Panel(
-        grid,
-        title="[bold]Current Task[/bold]",
-        border_style="magenta",
-        padding=(1, 2),
-    )
+    return Panel(table, title=title, border_style="blue", padding=(1, 2))
 
 
 def make_footer(processed: int, failed: int) -> Panel:
-    t = Table.grid(padding=(0, 1))
-    t.add_column()
+    table = Table.grid(expand=True)
+    table.add_column(justify="left")
+    table.add_column(justify="right")
 
-    t.add_row(f"[green]Processed:[/green] {processed}")
-    t.add_row(f"[red]Failed:[/red] {failed}")
-    t.add_row("[bold]Made with love by Harindu[/bold]")
-    t.add_row("[bold]Credits[/bold]  Harindu Jayakody")
-    t.add_row("[blue]https://github.com/harindujayakody/flow-veo-watermark-remover[/blue]")
-    t.add_row("[bright_black]Tip: use JetBrains Mono / Cascadia Code / Fira Code in your terminal[/bright_black]")
+    left = Text.from_markup(f"[green]Done: {processed}[/green]  |  [red]Failed: {failed}[/red]")
+    right = Text.from_markup("[bright_black]Press Ctrl+C to cancel[/bright_black]")
 
-    return Panel(t, border_style="bright_black", padding=(0, 2))
+    table.add_row(left, right)
+    return Panel(table, border_style="bright_black", padding=(0, 2))
 
 
 def make_summary_panel(
@@ -270,34 +273,26 @@ def make_summary_panel(
     total_output_bytes: int,
     elapsed: float,
 ) -> Group:
-    success_rate = (processed / total * 100.0) if total else 0.0
-    saved = total_input_bytes - total_output_bytes
+    status_text = Text(
+        "ALL DONE!" if failed == 0 else "COMPLETED WITH WARNINGS",
+        style="bold green" if failed == 0 else "bold yellow",
+    )
+    subtitle = Text(f"Finished processing in {format_seconds(elapsed)}", style="bright_black")
 
     stats = Table.grid(padding=(0, 2))
     stats.add_column(style="cyan", justify="right")
     stats.add_column(style="white")
 
-    stats.add_row("Videos Found", str(total))
-    stats.add_row("Processed", f"[green]{processed}[/green]")
-    stats.add_row("Failed", f"[red]{failed}[/red]")
-    stats.add_row("Success Rate", f"[bold green]{success_rate:.1f}%[/bold green]" if failed == 0 else f"[bold yellow]{success_rate:.1f}%[/bold yellow]")
+    stats.add_row("Total Videos", str(total))
+    stats.add_row("Processed", str(processed))
+    stats.add_row("Failed", str(failed))
     stats.add_row("Total Duration", format_seconds(duration))
-    stats.add_row("Elapsed Time", format_seconds(elapsed))
-    stats.add_row("Zoom Used", f"{zoom:.2f}x")
-    stats.add_row("Input Size", format_bytes(total_input_bytes))
-    stats.add_row("Output Size", format_bytes(total_output_bytes))
-    stats.add_row("Difference", f"[green]{format_bytes(abs(saved))} smaller[/green]" if saved > 0 else f"[yellow]{format_bytes(abs(saved))} larger[/yellow]" if saved < 0 else "No change")
-    stats.add_row("Output Folder", str(output_dir))
+    stats.add_row("Applied Zoom", f"{zoom:.2f}x")
+    stats.add_row("Input Bytes", format_bytes(total_input_bytes))
+    stats.add_row("Output Bytes", format_bytes(total_output_bytes))
+    stats.add_row("Output Dir", str(output_dir))
 
-    if failed == 0:
-        status_text = Text("✔ ALL TASKS COMPLETED", style="bold green")
-        border = "green"
-        subtitle = Text("Everything processed successfully", style="bright_black")
-    else:
-        status_text = Text("⚠ COMPLETED WITH ERRORS", style="bold yellow")
-        border = "yellow"
-        subtitle = Text("Some files could not be processed", style="bright_black")
-
+    border = "green" if failed == 0 else "yellow"
     hero = Panel(
         Align.center(
             Group(
@@ -336,6 +331,57 @@ def build_screen(
     )
 
 
+def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Flow Video Zoom Crop - Batch process, zoom, and crop videos for vertical formats."
+    )
+    parser.add_argument(
+        "zoom",
+        nargs="?",
+        type=float,
+        default=DEFAULT_ZOOM,
+        help=f"Zoom factor (>= 1.0, default: {DEFAULT_ZOOM})",
+    )
+    parser.add_argument(
+        "-i", "--input",
+        dest="input_dir",
+        type=Path,
+        default=Path.cwd(),
+        help="Input directory containing videos to process (default: current directory)",
+    )
+    parser.add_argument(
+        "-o", "--output",
+        dest="output_dir",
+        type=Path,
+        default=None,
+        help="Output directory for processed videos (default: ./output)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview scanned videos, filter calculations, and plans without modifying or encoding files",
+    )
+    parser.add_argument(
+        "-y", "--yes",
+        dest="assume_yes",
+        action="store_true",
+        help="Skip interactive confirmation prompt before starting encoding",
+    )
+    parser.add_argument(
+        "--skip-processed",
+        action="store_true",
+        help="Skip videos if their corresponding output file already exists",
+    )
+    parser.add_argument(
+        "--skip-target-res",
+        action="store_true",
+        help="Skip videos that already match the target resolution (720x1280)",
+    )
+    return parser.parse_args(args)
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    args = parse_args(argv)
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Zoom-crop every video under the current folder to 720x1280.",
@@ -365,6 +411,17 @@ def main() -> int:
         console.print("[bold red]Error:[/bold red] ffmpeg and ffprobe must be installed and in PATH.")
         return 1
 
+    zoom = args.zoom
+    if zoom < 1.0:
+        console.print("[bold red]Error:[/bold red] zoom factor must be >= 1.0")
+        return 1
+
+    input_dir = args.input_dir.resolve()
+    output_dir = (args.output_dir or (input_dir / "output")).resolve()
+
+    if not input_dir.exists():
+        console.print(f"[bold red]Error:[/bold red] Input directory does not exist: {input_dir}")
+        return 1
     input_dir = Path.cwd()
     output_dir = input_dir / "output"
 
@@ -374,6 +431,38 @@ def main() -> int:
     if total == 0:
         console.print("[yellow]No videos found.[/yellow]")
         return 0
+
+    if args.dry_run:
+        console.print(Panel(
+            f"[bold cyan]DRY-RUN PREVIEW[/bold cyan]\n\nFound [bold]{total}[/bold] video(s) under: [dim]{input_dir}[/dim]\nTarget output: [dim]{output_dir}[/dim]\nResolution: [bold]{OUT_W}x{OUT_H}[/bold] | Zoom: [bold]{zoom:.2f}x[/bold]",
+            border_style="cyan",
+        ))
+        table = Table(title="Planned Videos to Process", border_style="cyan")
+        table.add_column("#", justify="right")
+        table.add_column("Relative Path")
+        table.add_column("Size", justify="right")
+        table.add_column("Planned Output")
+
+        for idx, vid in enumerate(videos, start=1):
+            rel = vid.relative_to(input_dir)
+            out_p = output_dir / rel
+            out_p = out_p.with_name(out_p.stem + f"_zoom_{zoom:.2f}".replace(".", "_") + out_p.suffix)
+            sz = format_bytes(vid.stat().st_size) if vid.exists() else "0 B"
+            table.add_row(str(idx), str(rel), sz, str(out_p.name))
+
+        console.print(table)
+        console.print("\n[green]Dry-run complete. No files were modified or encoded.[/green]")
+        return 0
+
+    if not args.assume_yes:
+        console.print(Panel(
+            f"[bold cyan]FLOW VIDEO ZOOM CROP[/bold cyan]\n\nFound [bold]{total}[/bold] video(s) to process.\nTarget Resolution: [bold]{OUT_W}x{OUT_H}[/bold] | Zoom: [bold]{zoom:.2f}x[/bold]\nInput Directory:  [dim]{input_dir}[/dim]\nOutput Directory: [dim]{output_dir}[/dim]\n\n[dim]Responsible Use Notice: Ensure you own or have explicit authorization to crop/modify these media files.[/dim]",
+            title="Batch Confirmation",
+            border_style="cyan",
+        ))
+        if not Confirm.ask("Proceed with batch video re-encoding?", default=True):
+            console.print("[yellow]Operation cancelled by user. No files were processed.[/yellow]")
+            return 0
 
     # Plan first, encode second: show exactly what will happen and, unless
     # --yes was given, ask before any file is re-encoded. Already-720x1280
@@ -458,6 +547,26 @@ def main() -> int:
                 input_size = video.stat().st_size if video.exists() else 0
                 total_input_bytes += input_size
 
+                out_path = output_dir / video.relative_to(input_dir)
+                out_path = out_path.with_name(
+                    out_path.stem + f"_zoom_{zoom:.2f}".replace(".", "_") + out_path.suffix
+                )
+
+                if args.skip_processed and out_path.exists():
+                    current_task = make_current_task_card(
+                        current_index=i,
+                        total=total,
+                        rel_path=rel,
+                        status="Skipped • Output already exists",
+                        recommendation="Output file exists (--skip-processed)",
+                        input_size=input_size,
+                    )
+                    progress.advance(task_id)
+                    footer = make_footer(processed, failed)
+                    live.update(build_screen(hero, current_task, progress, footer))
+                    time.sleep(0.05)
+                    continue
+
                 current_task = make_current_task_card(
                     current_index=i,
                     total=total,
@@ -472,6 +581,25 @@ def main() -> int:
                 try:
                     width, height, duration = get_video_info(video)
                     total_duration += duration
+
+                    if args.skip_target_res and width == OUT_W and height == OUT_H:
+                        current_task = make_current_task_card(
+                            current_index=i,
+                            total=total,
+                            rel_path=rel,
+                            status="Skipped • Already target resolution",
+                            width=width,
+                            height=height,
+                            duration=duration,
+                            recommendation=f"Already {OUT_W}x{OUT_H} (--skip-target-res)",
+                            input_size=input_size,
+                        )
+                        progress.advance(task_id)
+                        footer = make_footer(processed, failed)
+                        live.update(build_screen(hero, current_task, progress, footer))
+                        time.sleep(0.05)
+                        continue
+
                     recommendation = recommend_zoom(width, height, zoom)
 
                     current_task = make_current_task_card(
@@ -487,11 +615,6 @@ def main() -> int:
                     )
                     footer = make_footer(processed, failed)
                     live.update(build_screen(hero, current_task, progress, footer))
-
-                    out_path = output_dir / video.relative_to(input_dir)
-                    out_path = out_path.with_name(
-                        out_path.stem + f"_zoom_{zoom:.2f}".replace(".", "_") + out_path.suffix
-                    )
 
                     ok, msg = process_video(video, out_path, zoom)
 
