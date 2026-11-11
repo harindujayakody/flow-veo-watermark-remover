@@ -94,12 +94,27 @@ python app.py
 ### Dry-run Inspection
 
 Preview what files will be processed without re-encoding:
+The tool first lists every video it found, marks files already at 720x1280
+as skipped, and asks for confirmation before re-encoding anything.
+
+### With custom zoom:
 
 ```bash
 python app.py --dry-run
 ```
 
 ### Custom Zoom & Arguments
+### Options:
+
+```bash
+python app.py --dry-run   # list what would be processed, change nothing
+python app.py --yes       # skip the confirmation prompt
+python app.py --force     # also re-encode files already at 720x1280
+```
+
+---
+
+## 🔍 Zoom Guide
 
 ```bash
 # Custom zoom factor (e.g. 1.25x zoom)
@@ -157,3 +172,17 @@ python -m unittest test_app.py
 ## 🧾 License
 
 [MIT](LICENSE) © 2026 Harindu Jayakody. Free to use and modify.
+MIT License — free to use and modify. See [LICENSE](LICENSE).
+
+> ⚠️ Note: removing watermarks from videos is against Google's terms of use
+> for Flow/Veo. This tool is a general zoom-crop utility — only use it on
+> videos you own or have the right to modify, and respect the terms of the
+> service that produced them.
+
+---
+
+## ❤️ Credits
+
+**Built by ChatGPT & Prompted by Harindu**
+
+---
